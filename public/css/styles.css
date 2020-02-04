@@ -1,0 +1,13 @@
+.list-group-item {
+    height: 100px;
+}
+.edit-button {
+    position: absolute;
+    top: 50%;
+    left: 2%;
+}
+.delete-button {
+    position: absolute;
+    top: 50%;
+    right: 2%;
+}

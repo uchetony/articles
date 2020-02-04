@@ -2,7 +2,14 @@ extends layout
 
 block   content
     h1  #{text}
-    ul
-        each article, i in articles
-            li.list-group-item
-                a(href="/articles/" + article._id)= article.title
+    if(articles.length === 0)
+        .text-center
+            h6 No articles to be displayed. 
+            a(href='/articles/add') Add article now
+    else
+        ul
+            each article, el in articles
+                li.list-group-item
+                    a(href="/articles/" + article._id)= article.title
+                    a.btn.btn-primary.edit-button(href="/articles/edit/" + article._id) Edit
+                    a.btn.btn-danger.delete-button.delete-article(href="#", data-id=article._id) Delete

@@ -1,11 +1,15 @@
-// import express framework
+// IMPORTS
 const express = require('express');
 const app = express();
 const port = 3000;
 const path = require('path')
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
+const session = require('express-session')
+const flash = require('connect-flash')
+const expressValidator = require('express-validator')
 
+// DATABASE CONFIG
 mongoose.connect('mongodb://localhost/nodekb', (err) => {
     if(err) throw err;
     
@@ -13,30 +17,57 @@ mongoose.connect('mongodb://localhost/nodekb', (err) => {
 })
 let db = mongoose.connection;
 
-// // check for db connection
-// db.once('open', () => {
-    
-// })
-
-// // check for db errors
-// db.on('error', (err) => {
-//     console.log(err)
-// })
-
-// Bring in models
+// MODELS
 let Article = require('./models/article')
 
-// body-parser Middleware
 
-// parse application/x-www-form-urlencoded
+// MIDDLEWARES
+
+// body-parser Middleware
 app.use(bodyParser.urlencoded({ extended: false }))
-// parse application/json
 app.use(bodyParser.json())
+
+// express validator middleware
+app.use(expressValidator({
+    errorFormatter: function(param, msg, value) {
+        var namespace = param.split('.')
+        , root    = namespace.shift()
+        , formParam = root;
+  
+      while(namespace.length) {
+        formParam += '[' + namespace.shift() + ']';
+      }
+      return {
+        param : formParam,
+        msg   : msg,
+        value : value
+      };
+    }
+}));
+
+// express session middleware
+app.use(session({
+    secret: 'keyboard cat',
+    resave: true,
+    saveUninitialized: true,
+    // cookie: { secure: true }
+    cookie: {}
+}))
+
+// express messaging middleware
+app.use(require('connect-flash')());
+app.use(function (req, res, next) {
+  res.locals.messages = require('express-messages')(req, res);
+  next();
+});
 
 // use static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-//root route 
+
+//   ROUTES
+
+//  root route 
 app.get('/', (req, res) => {
     Article.find({}, (err, articles) => {
         if(err) {
@@ -50,51 +81,16 @@ app.get('/', (req, res) => {
     })
 })
 
-// route to add an article 
-app.get('/articles/add', (req, res) => {
-    res.render('add_article', {
-        text: "Add Article" 
-    })
-})
+// articles route
+const articlesRoute = require('./routes/articlesRoute')
+app.use('/articles', articlesRoute)
 
-// route to see specifics of just one route
-app.get('/articles/:id', (req, res) => {
-    let id = req.params.id
-    Article.findById(id, (err, article) => {
-        if (err) {
-            console.log(err)
-            return;
-        } else {
-            res.render('article', {
-                text: "Article Details",
-                article   
-            })
-        }
-    })
-})
 
-app.post('/articles/add', (req, res) => {
-    let article = new Article();
-    article.title = req.body.title;
-    article.Author = req.body.author;
-    article.body = req.body.body;
-
-    article.save((err) => {
-        if(err) {
-            console.log(err);
-            return;
-        } else {
-            res.redirect('/')
-        }
-    })
-    
-})
-
-// set the view for the app
+// APP VIEW SETTING
 app.set('views', path.join(__dirname, 'views'))
-// set the view or template engine
 app.set('view engine', 'pug');
 
+// LAUNCH APP
 // start app on port 3000
 app.listen(port, () => {
     console.log(`App listening on port ${port}`)
